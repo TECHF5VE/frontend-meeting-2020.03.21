@@ -90,3 +90,55 @@ export default class Extends extends FetchComponent {
   }
 }
 ```
+
+看起来挺美好, 假如说我现在要采取 [swr](https://swr.now.sh/) 思想, 即当页面 focus 时重新发请求, 如何使用这个思想编写?
+
+```typescript
+class FetchWhenFocusComponent extends FetchComponent { ... }
+
+export default MyComponent extends FetchWhenFocusComponent { ... }
+```
+
+所以每多加一个需要抽象的需求就需要增加一个基类?
+
+有同学说啦, 这是因为仅允许单继承
+
+然而历史已经证明了, 多继承会引入更多的问题, [钻石问题](https://www.quora.com/What-is-the-diamond-problem-in-programming)了解一下?
+
+方法三: **DI/IOC**
+
+先看代码:
+
+```typescript
+import React from 'react';
+
+export default class DIIOC extends React.Component {
+  state = {
+    data: null
+  };
+  constructor(props: {}, private update: (url: string) => Promise<{}>) {
+    super(props);
+  }
+  async componentDidMount() {
+    const data = await this.update('someUrl');
+    this.setState({ data });
+  }
+  handleClick = async () => {
+    const data = await this.update('someUrl');
+    this.setState({ data });
+  };
+  render() {
+    return <div onClick={this.handleClick}>{this.state.data}</div>;
+  }
+}
+```
+
+可以说, DI/IOC 几乎完美的解决了复用逻辑在面向对象方面的问题
+
+仅需要在 `constructor` 里注册相应的服务即可
+
+Angular 就是这种方法的集大成者
+
+缺点是什么? 还是那句话, **难以与业务进行深度集成, 即难以影响生命周期函数**
+
+## Data Fetching and Hook
