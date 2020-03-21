@@ -10,5 +10,5 @@ export default function UseCustomHook() {
   if (isLoading) {
     return <div>loading......</div>;
   }
-  return <div onClick={update}>{data}</div>;
+  return <div onClick={() => update()}>{data}</div>;
 }

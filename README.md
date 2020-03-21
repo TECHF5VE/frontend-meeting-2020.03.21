@@ -210,11 +210,11 @@ export default function useData<T>(url: T, timeout = 3000) {
   const [data, setData] = useState<T>();
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const update = useCallback(async () => {
+  const update = useCallback(async (newUrl?: T) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await fakeApi(url));
+      setData(await fakeApi(newUrl ?? url));
     } catch (e) {
       setError(e);
     } finally {
@@ -250,3 +250,86 @@ export default function UseCustomHook() {
 ```
 
 瞧, 一方面达到了**复用逻辑**的目的, 另一方面**代码也变得干净整洁, 提高了可维护性和可读性**
+
+## Data Fetching and Suspense
+
+看起来挺美好, 直到产品经理加了需求:
+
+我需要一个用户页, 包含用户名称与用户详情
+
+首先编写 mock 数据:
+
+```typescript
+export const users = [
+  {
+    id: 0,
+    name: '0-aa'
+  },
+  {
+    id: 1,
+    name: '1-bb'
+  },
+  {
+    id: 2,
+    name: '2-cc'
+  }
+];
+
+export const details = [
+  {
+    id: 0,
+    detail: '0-detail'
+  },
+  {
+    id: 1,
+    detail: '1-detail'
+  },
+  {
+    id: 2,
+    detail: '2-detail'
+  }
+];
+
+export function getNextUser(currentId: number) {
+  return currentId === 2 ? 0 : currentId + 1;
+}
+```
+
+然后使用刚刚我们讨论的`useData`编写组件:
+
+```typescript
+import React from 'react';
+import useData from './05-hook-useData';
+import { users, getNextUser, details } from './07-user-mock';
+
+export function UserDetail({ id }: { id: number }) {
+  const { data, isLoading } = useData(details[id], 3000 * Math.random());
+
+  if (isLoading) {
+    return <div>loading user detail...</div>;
+  }
+  return <p>{data?.detail}</p>;
+}
+
+export function UserPage() {
+  const { data, isLoading, update } = useData(users[0], 3000 * Math.random());
+  const handleClick = () => {
+    update(users[getNextUser(data?.id ?? 0)]);
+  };
+
+  if (isLoading) {
+    return <div>loading user...</div>;
+  }
+  return (
+    <>
+      <button onClick={handleClick}>update user</button>
+      <h1>{data?.name}</h1>
+      <UserDetail id={data?.id ?? 0} />
+    </>
+  );
+}
+```
+
+看起来十分美好, 我不禁满意的鼓起了掌
+
+且慢, 这串代码真的没有问题吗?
