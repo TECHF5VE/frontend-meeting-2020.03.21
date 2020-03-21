@@ -1,4 +1,5 @@
 import React from 'react';
+import fakeApi from './00-fakeApi';
 
 class FetchComponent extends React.Component {
   state = {
@@ -7,7 +8,7 @@ class FetchComponent extends React.Component {
   url = '';
   async update() {
     this.setState({
-      data: await fetch(this.url)
+      data: await fakeApi(this.url)
     });
   }
   componentDidMount() {

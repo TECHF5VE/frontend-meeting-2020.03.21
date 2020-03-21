@@ -1,4 +1,5 @@
 import React from 'react';
+import fakeApi from './00-fakeApi';
 
 export default class Problem extends React.Component {
   state = {
@@ -6,7 +7,7 @@ export default class Problem extends React.Component {
   };
   async update() {
     this.setState({
-      data: await fetch('someThing')
+      data: await fakeApi('someThing')
     });
   }
   componentDidMount() {

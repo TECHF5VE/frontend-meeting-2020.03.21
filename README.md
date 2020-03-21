@@ -160,3 +160,78 @@ Angular 就是这种方法的集大成者
 **hook 的目的在于解决 class 难以解决的逻辑复用问题**
 
 同样的网络请求逻辑, 如何使用 hook 编写呢?
+
+```typescript
+import React, { useState, useCallback, useEffect } from 'react';
+import fakeApi from './00-fakeApi';
+
+export default function HookRaw() {
+  const url = 'someThing';
+  const [data, setData] = useState<string>('');
+  const [isLoading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const update = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fakeApi(url));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    update();
+  }, []);
+  const handleClick = useCallback(() => {
+    update();
+  }, []);
+
+  if (error) {
+    return <div>error: {error?.message}</div>;
+  }
+  if (isLoading) {
+    return <div>loading......</div>;
+  }
+  return <div onClick={handleClick}>{data}</div>;
+}
+```
+
+现在我们已经使用hook编写了这样能fetch data的组件
+
+如果要把其中的逻辑抽象出来, 可以先编写一个自定义hook:
+
+```typescript
+import { useState, useCallback, useEffect } from 'react';
+import fakeApi from './00-fakeApi';
+
+export default function useData<T>(url: T, timeout = 3000) {
+  const [data, setData] = useState<T>();
+  const [isLoading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const update = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fakeApi(url));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    update();
+  }, []);
+
+  return { data, isLoading, error, update };
+}
+```
+
+然后再编写一个组件调用这个hook:
+
+```typescript
+
+```
