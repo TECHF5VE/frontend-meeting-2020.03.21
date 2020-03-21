@@ -330,6 +330,153 @@ export function UserPage() {
 }
 ```
 
+为了模拟真实网络情况, 特地加上了 `Math.random()`
+
 看起来十分美好, 我不禁满意的鼓起了掌
 
 且慢, 这串代码真的没有问题吗?
+
+---
+
+- **瀑布问题**
+- **竞速问题**
+
+这两个问题都可以使用现有的方法规避和解决, 但是代码会更臃肿, 更难以复用, 而且很容易忽略
+
+比如上面的代码就忽略了错误处理
+
+所以, 是时候安利 `Suspense` 了
+
+首先, 我们编写 `usePromise`, 一方面设立缓存, 另一方面将错误与异步抛出
+
+```typescript
+interface Cache<T = any> {
+  data: T;
+  error: Error | typeof initError;
+  promise: Promise<T>;
+}
+
+const cache: { [key: string]: Cache } = {};
+
+/**
+ * 以前初始值是 `undefined`, 当 `promise` 返回 `undefined` 时会引起递归
+ */
+const initData = Symbol('init data');
+const initError = Symbol('no error');
+
+export default function usePromise<T extends any[], Data = any>(
+  fn: (...args: T) => Promise<Data>,
+  ...args: T
+): Data {
+  const key = fn.name + args.toString();
+  if (!cache[key]) {
+    cache[key] = {
+      data: initData,
+      error: initError,
+      promise: fn(...args)
+        .then(data => (cache[key].data = data))
+        .catch(error => (cache[key].error = error))
+    };
+  }
+  if (cache[key].data === initData && cache[key].error === initError) {
+    throw cache[key].promise;
+  }
+  if (cache[key].error !== initError) {
+    throw cache[key].error;
+  }
+  return cache[key].data;
+}
+```
+
+然后编写错误处理组件:
+
+```typescript
+import React from 'react';
+
+export interface ErrorBoundaryProps extends React.PropsWithChildren<{}> {
+  fallback: React.ReactNode;
+}
+
+export default class ErrorBoundary extends React.Component<ErrorBoundaryProps> {
+  state = { error: false };
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  render() {
+    const { fallback, children } = this.props;
+    return this.state.error ? fallback : children;
+  }
+}
+```
+
+最后编写组件:
+
+```typescript
+import React, { Suspense, useState } from 'react';
+import usePromise from './09-usePromise';
+import fakeApi from './00-fakeApi';
+import { details, users, getNextUser } from './07-user-mock';
+import ErrorBoundary from './10-ErrorBoundary';
+
+function getUserDetail(id: number) {
+  return fakeApi(details[id], 3000 * Math.random());
+}
+
+function useUserDetail(id: number) {
+  return usePromise(getUserDetail, id);
+}
+
+export function NewUserDetail({ id }: { id: number }) {
+  const { detail } = useUserDetail(id);
+  return <div>{detail}</div>;
+}
+
+function getUser(id: number) {
+  return fakeApi(users[id], 3000 * Math.random());
+}
+
+function useUser(id: number) {
+  return usePromise(getUser, id);
+}
+
+export function NewUser({ id }: { id: number }) {
+  const { name } = useUser(id);
+  return <h1>{name}</h1>;
+}
+
+export function UserDetailWrapper({ id }: { id: number }) {
+  return (
+    <ErrorBoundary fallback={<div>error!</div>}>
+      <Suspense fallback={<div>loading user detail...</div>}>
+        <NewUserDetail id={id} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+export function UserWrapper({ id }: { id: number }) {
+  return (
+    <ErrorBoundary fallback={<div>error!</div>}>
+      <Suspense fallback={<div>loading user...</div>}>
+        <NewUser id={id} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+export default function UserPage() {
+  const [id, setId] = useState(0);
+  const handleClick = () => {
+    setId(getNextUser(id));
+  };
+  return (
+    <>
+      <button onClick={handleClick}>next</button>
+      <UserWrapper id={id} />
+      <UserDetailWrapper id={id} />
+    </>
+  );
+}
+```
+
+这样编写的组件就可以完美解决刚刚提到的**瀑布问题**与**竞速问题**, 思考, 为什么?
