@@ -12,6 +12,20 @@
 
 这个思维模式将贯穿此次分享
 
+## Fake Api
+
+为了方便测试, 我们先编写如下的 `fakeApi` 来模拟网络请求
+
+```typescript
+export default function fakeApi<T>(data: T, timeout = 3000) {
+  return new Promise<T>(resolve => {
+    setTimeout(() => {
+      resolve(data);
+    }, timeout);
+  });
+}
+```
+
 ## Data Fetching and Class Component
 
 发送请求, 处理响应是非常常见的前端场景, 当这个场景使用 React 加面向对象理念编写, 很容易写出以下代码:
@@ -142,3 +156,7 @@ Angular 就是这种方法的集大成者
 缺点是什么? 还是那句话, **难以与业务进行深度集成, 即难以影响生命周期函数**
 
 ## Data Fetching and Hook
+
+**hook 的目的在于解决 class 难以解决的逻辑复用问题**
+
+同样的网络请求逻辑, 如何使用 hook 编写呢?
