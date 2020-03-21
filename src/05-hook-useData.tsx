@@ -4,12 +4,12 @@ import fakeApi from './00-fakeApi';
 export default function useData<T>(url: T, timeout = 3000) {
   const [data, setData] = useState<T>();
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error>();
   const update = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError(undefined);
     try {
-      setData(await fakeApi(url));
+      setData(await fakeApi(url, timeout));
     } catch (e) {
       setError(e);
     } finally {

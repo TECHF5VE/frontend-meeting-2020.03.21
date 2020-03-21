@@ -5,10 +5,10 @@ export default function HookRaw() {
   const url = 'someThing';
   const [data, setData] = useState<string>();
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error>();
   const update = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError(undefined);
     try {
       setData(await fakeApi(url));
     } catch (e) {

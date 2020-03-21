@@ -198,9 +198,9 @@ export default function HookRaw() {
 }
 ```
 
-现在我们已经使用hook编写了这样能fetch data的组件
+现在我们已经使用 hook 编写了这样能 fetch data 的组件
 
-如果要把其中的逻辑抽象出来, 可以先编写一个自定义hook:
+如果要把其中的逻辑抽象出来, 可以先编写一个自定义 hook:
 
 ```typescript
 import { useState, useCallback, useEffect } from 'react';
@@ -230,8 +230,23 @@ export default function useData<T>(url: T, timeout = 3000) {
 }
 ```
 
-然后再编写一个组件调用这个hook:
+然后再编写一个组件调用这个 hook:
 
 ```typescript
+import React from 'react';
+import useData from './05-hook-useData';
 
+export default function UseCustomHook() {
+  const { data, isLoading, error, update } = useData('someUrl');
+
+  if (error) {
+    return <div>error: {error?.message}</div>;
+  }
+  if (isLoading) {
+    return <div>loading......</div>;
+  }
+  return <div onClick={update}>{data}</div>;
+}
 ```
+
+瞧, 一方面达到了**复用逻辑**的目的, 另一方面**代码也变得干净整洁, 提高了可维护性和可读性**
